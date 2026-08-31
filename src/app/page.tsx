@@ -1,69 +1,182 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useRef, useCallback, useEffect } from 'react';
+import Header from '@/components/Header';
+import MatchList from '@/components/MatchList';
+import StoryPoster from '@/components/StoryPoster';
+import PostPoster from '@/components/PostPoster';
+import ExportControls from '@/components/ExportControls';
+import CafeSettingsModal from '@/components/CafeSettingsModal';
+import { useMatches } from '@/hooks/useMatches';
+import { useCafeSettings } from '@/hooks/useCafeSettings';
+import type { PosterFormat } from '@/lib/types';
+import { Settings2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
+  const {
+    matches,
+    addMatch,
+    removeMatch,
+    isRefreshing,
+    lastUpdated,
+    refreshError,
+    refreshFromApi,
+  } = useMatches();
+  const { settings, updateSettings } = useCafeSettings();
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
+  const [format, setFormat] = useState<PosterFormat>('story');
+  const [showCafeModal, setShowCafeModal] = useState(false);
+  const posterRef = useRef<HTMLDivElement>(null);
+
+  const selectedMatch = matches.find((m) => m.id === selectedMatchId) ?? matches[0] ?? null;
+
+  const handleSelectMatch = useCallback((matchId: string) => {
+    setSelectedMatchId(matchId);
+  }, []);
+
+  // Sayfa açılışında Sofascore'dan otomatik çek
+  useEffect(() => {
+    refreshFromApi();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="flex h-screen flex-col overflow-hidden">
+      <Header
+        onOpenCafeSettings={() => setShowCafeModal(true)}
+        onRefresh={refreshFromApi}
+        isRefreshing={isRefreshing}
+        lastUpdated={lastUpdated}
+        refreshError={refreshError}
+      />
+
+      <main className="flex flex-1 overflow-hidden">
+        {/* ── Left Panel: Match List ──────────────────────────── */}
+        <aside className="flex w-[380px] shrink-0 flex-col border-r border-white/5 bg-[#0c0c14] overflow-hidden">
+          <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-white">Maç Listesi</h2>
+              {/* Sofascore badge */}
+              <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-400 ring-1 ring-emerald-500/20">
+                Sofascore
+              </span>
+            </div>
+            <button
+              onClick={() => setShowCafeModal(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-300 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+              <Settings2 className="h-3.5 w-3.5" />
+              Kafe Ayarları
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden p-4">
+            <MatchList
+              matches={matches}
+              selectedMatchId={selectedMatch?.id ?? null}
+              onSelectMatch={handleSelectMatch}
+              onAddMatch={addMatch}
+              onDeleteMatch={removeMatch}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          </div>
+        </aside>
+
+        {/* ── Right Panel: Preview + Export ─────────────────── */}
+        <section className="flex flex-1 flex-col overflow-hidden">
+          {/* Export Controls Bar */}
+          <div className="shrink-0 border-b border-white/5 bg-[#0a0a12]/80 px-6 py-3 backdrop-blur-sm">
+            <ExportControls
+              posterRef={posterRef}
+              selectedMatch={selectedMatch}
+              format={format}
+              onFormatChange={setFormat}
+              cafeSettings={settings}
+              onOpenCafeSettings={() => setShowCafeModal(true)}
+            />
+          </div>
+
+          {/* Preview Canvas Area */}
+          <div className="flex flex-1 items-center justify-center overflow-auto bg-[#06060d] p-8">
+            {/* Decorative background grid */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.03]"
+              style={{
+                backgroundImage:
+                  'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
+                backgroundSize: '40px 40px',
+              }}
+            />
+
+            {isRefreshing && matches.length === 0 ? (
+              /* İlk yükleme skeleton */
+              <div className="flex flex-col items-center gap-5 text-center">
+                <div className="relative flex h-20 w-20 items-center justify-center">
+                  <div className="absolute inset-0 animate-ping rounded-full bg-amber-500/20" />
+                  <div className="h-14 w-14 rounded-full bg-gradient-to-br from-amber-500/30 to-red-600/30 flex items-center justify-center">
+                    <span className="text-2xl">⚽</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Sofascore'dan maçlar çekiliyor...</p>
+                  <p className="mt-1 text-xs text-gray-500">GS • FB • BJK yaklaşan maçları</p>
+                </div>
+              </div>
+            ) : selectedMatch ? (
+              <div className="relative flex items-center justify-center">
+                {/* Ambient glow behind poster */}
+                <div
+                  className="pointer-events-none absolute inset-0 -z-10 scale-90 blur-3xl opacity-20"
+                  style={{
+                    background:
+                      'radial-gradient(circle, #fdb913 0%, #c8102e 50%, transparent 80%)',
+                  }}
+                />
+
+                {/* Scaled preview wrapper */}
+                <div
+                  className={cn(
+                    'origin-center transition-transform duration-500 ease-out shadow-2xl shadow-black/80 rounded-2xl overflow-hidden ring-1 ring-white/10'
+                  )}
+                  style={{
+                    transform: format === 'story' ? 'scale(0.285)' : 'scale(0.47)',
+                    width: 1080,
+                    height: format === 'story' ? 1920 : 1080,
+                    marginTop: format === 'story' ? '-670px' : '0',
+                    marginBottom: format === 'story' ? '-670px' : '0',
+                  }}
+                >
+                  {format === 'story' ? (
+                    <StoryPoster ref={posterRef} match={selectedMatch} cafeSettings={settings} />
+                  ) : (
+                    <PostPoster ref={posterRef} match={selectedMatch} cafeSettings={settings} />
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+                  <span className="text-4xl">🏟️</span>
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white">Maç seçilmedi</p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Sol panelden bir maç seçerek önizlemeyi başlatın
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
       </main>
+
+      {/* Cafe Settings Modal */}
+      {showCafeModal && (
+        <CafeSettingsModal
+          settings={settings}
+          onSave={updateSettings}
+          onClose={() => setShowCafeModal(false)}
+        />
+      )}
     </div>
   );
 }

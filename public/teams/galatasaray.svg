@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="gsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FDB913;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#C8102E;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#gsGrad)" stroke="#fff" stroke-width="3"/>
+  <circle cx="100" cy="100" r="78" fill="none" stroke="#fff" stroke-width="2" opacity="0.5"/>
+  <text x="100" y="75" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="36" font-weight="900" fill="#fff" letter-spacing="2">GALATA</text>
+  <text x="100" y="110" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="36" font-weight="900" fill="#fff" letter-spacing="2">SARAY</text>
+  <text x="100" y="145" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#FDB913" letter-spacing="4">⭐⭐⭐⭐</text>
+  <text x="100" y="165" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#fff" opacity="0.8">1905</text>
+</svg>
