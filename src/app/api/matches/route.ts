@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { Match, TeamSlug } from '@/lib/types';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
+import { DEFAULT_MATCHES } from '@/lib/constants';
 
 // ─── Takım ID Haritası ─────────────────────────────────────────────────
 const TRACKED_TEAMS: { slug: TeamSlug; sofascoreId: number; name: string }[] = [
@@ -12,21 +9,8 @@ const TRACKED_TEAMS: { slug: TeamSlug; sofascoreId: number; name: string }[] = [
   { slug: 'besiktas', sofascoreId: 3050, name: 'Beşiktaş' },
 ];
 
-// Sofascore "away team" ismini TeamSlug'a eşleştirmek için
-const TEAM_NAME_TO_SLUG: Record<string, TeamSlug> = {
-  galatasaray: 'galatasaray',
-  'galatasaray sk': 'galatasaray',
-  fenerbahçe: 'fenerbahce',
-  fenerbahce: 'fenerbahce',
-  'fenerbahçe sk': 'fenerbahce',
-  beşiktaş: 'besiktas',
-  besiktas: 'besiktas',
-  'beşiktaş jk': 'besiktas',
-};
-
 // ─── Sofascore Timestamp → Türkiye saatine çevirme ─────────────────────
 function tsToDate(timestamp: number): { date: string; time: string } {
-  // Sofascore UTC timestamp'ini TR (UTC+3) saatine çevirir
   const trOffset = 3 * 60 * 60 * 1000;
   const d = new Date(timestamp * 1000 + trOffset);
 
@@ -60,45 +44,47 @@ function normalizeLeague(name: string): string {
   return name;
 }
 
-// ─── Tek takımın maçlarını çek ─────────────────────────────────────────
+// ─── Tek takımın maçlarını çek (Native fetch - Vercel Uyumlu) ─────────
 async function fetchTeamMatches(team: (typeof TRACKED_TEAMS)[number]): Promise<Match[]> {
   const url = `https://api.sofascore.com/api/v1/team/${team.sofascoreId}/events/next/0`;
 
   try {
-    const curlCommand = `curl -s -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" "${url}"`;
-    const { stdout } = await execAsync(curlCommand);
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        Accept: '*/*',
+        'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+      },
+      next: { revalidate: 300 }, // 5 dakika cache
+    });
 
-    if (!stdout || stdout.trim() === '') {
-      console.error(`Sofascore curl returned empty output for ${team.name}`);
+    if (!res.ok) {
+      console.warn(`Sofascore HTTP error ${res.status} for ${team.name}`);
       return [];
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data: { events: any[] } = JSON.parse(stdout);
+    const data: { events: any[] } = await res.json();
 
     if (!data.events || !Array.isArray(data.events)) {
-      console.error(`Sofascore events array missing for ${team.name}`);
       return [];
     }
 
     const now = Math.floor(Date.now() / 1000);
 
     return data.events
-      .filter((event) => event.startTimestamp >= now - 3600)
-      .slice(0, 8) // en fazla 8 maç
+      .filter((event) => event.startTimestamp >= now - 7200)
+      .slice(0, 8)
       .map((event) => {
         const { date, time } = tsToDate(event.startTimestamp);
 
-        // ID ile ev sahibi/deplasman tespiti
         const isHome = event.homeTeam?.id === team.sofascoreId;
-
-        // Karşı takım bilgisi
         const opponent = isHome ? event.awayTeam : event.homeTeam;
         const opponentName = opponent?.name ?? 'Bilinmiyor';
         const opponentId = opponent?.id;
         const awayTeamLogo = opponentId ? `/api/team-logo/${opponentId}` : undefined;
 
-        // Venue fallback
         const homeTeamName = event.homeTeam?.name ?? team.name;
         const venue = isHome
           ? `${team.name} Stadyumu`
@@ -119,7 +105,7 @@ async function fetchTeamMatches(team: (typeof TRACKED_TEAMS)[number]): Promise<M
         } satisfies Match;
       });
   } catch (err) {
-    console.error(`Sofascore curl failed for ${team.name}:`, err);
+    console.error(`Sofascore fetch failed for ${team.name}:`, err);
     return [];
   }
 }
@@ -127,7 +113,6 @@ async function fetchTeamMatches(team: (typeof TRACKED_TEAMS)[number]): Promise<M
 // ─── Ana Route Handler ──────────────────────────────────────────────────
 export async function GET() {
   try {
-    // 3 takımı paralel çek
     const results = await Promise.allSettled(
       TRACKED_TEAMS.map((team) => fetchTeamMatches(team))
     );
@@ -151,20 +136,16 @@ export async function GET() {
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
+    // Vercel veya IP engeli durumunda hiç canlı maç çekilemediyse DEFAULT_MATCHES verisini sun
     if (allMatches.length === 0) {
-      // Tüm istekler başarısız olduysa fallback
-      return NextResponse.json(
-        { error: 'Sofascore verisi alınamadı', matches: [] },
-        { status: 503 }
-      );
+      console.warn('Sofascore canlı verileri çekilemedi, fallback örnek maçlar sunuluyor.');
+      return NextResponse.json(DEFAULT_MATCHES);
     }
 
     return NextResponse.json(allMatches);
   } catch (err) {
     console.error('Matches API error:', err);
-    return NextResponse.json(
-      { error: 'Sunucu hatası', matches: [] },
-      { status: 500 }
-    );
+    // Hata durumunda da boş dizi yerine varsayılan maçları dönerek uygulamanın çökmesini engelle
+    return NextResponse.json(DEFAULT_MATCHES);
   }
 }
