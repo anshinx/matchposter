@@ -1,4 +1,4 @@
-export type TeamSlug = 'galatasaray' | 'fenerbahce' | 'besiktas';
+export type TeamSlug = 'galatasaray' | 'fenerbahce' | 'besiktas' | 'trabzonspor';
 
 export interface Team {
   slug: TeamSlug;

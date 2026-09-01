@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
 
 export async function GET(
   request: NextRequest,
@@ -11,37 +10,35 @@ export async function GET(
     return new NextResponse('Invalid ID', { status: 400 });
   }
 
-  const url = `https://api.sofascore.com/api/v1/team/${id}/image`;
-  const curlCommand = `curl -s -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" "${url}"`;
+  // Sofascore static CDN domain
+  const url = `https://img.sofascore.com/api/v1/team/${id}/image`;
 
-  return new Promise<NextResponse>((resolve) => {
-    exec(curlCommand, { encoding: 'buffer' }, (error, stdout) => {
-      if (error || !stdout || stdout.length === 0) {
-        console.error(`Failed to fetch logo for team ${id}:`, error);
-        // Fallback transparent 1x1 PNG
-        const fallbackPng = Buffer.from(
-          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
-          'base64'
-        );
-        resolve(
-          new NextResponse(fallbackPng, {
-            headers: {
-              'Content-Type': 'image/png',
-              'Cache-Control': 'public, max-age=86400',
-            },
-          })
-        );
-        return;
-      }
-
-      resolve(
-        new NextResponse(stdout, {
-          headers: {
-            'Content-Type': 'image/png',
-            'Cache-Control': 'public, max-age=604800, immutable', // Cache for 7 days
-          },
-        })
-      );
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+      },
+      next: { revalidate: 86400 },
     });
-  });
+
+    if (!res.ok) {
+      return new NextResponse('Team logo not found', { status: 404 });
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const contentType = res.headers.get('content-type') || 'image/webp';
+
+    return new NextResponse(buffer, {
+      headers: {
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=604800, immutable',
+      },
+    });
+  } catch (error) {
+    console.error(`Failed to fetch logo for team ${id}:`, error);
+    return new NextResponse('Error fetching logo', { status: 404 });
+  }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, useState, useEffect } from 'react';
 import type { Match, CafeSettings } from '@/lib/types';
 import { TEAMS } from '@/lib/constants';
 import { getTurkishDayName, getLeagueHeaderTitle, formatPhoneNumber } from '@/lib/utils';
@@ -40,12 +40,29 @@ const DefaultCafeLogo = () => (
   </svg>
 );
 
+function resolveAwayLogo(match: Match): string | undefined {
+  if (match.awayTeamLogo) return match.awayTeamLogo;
+  const lower = match.awayTeam.toLowerCase();
+  if (lower.includes('fenerbah')) return '/teams/fenerbahce.png';
+  if (lower.includes('galatasaray')) return '/teams/galatasaray.png';
+  if (lower.includes('beşiktaş') || lower.includes('besiktas')) return '/teams/besiktas.png';
+  if (lower.includes('trabzon')) return '/teams/trabzonspor.png';
+  return undefined;
+}
+
 const PostPoster = forwardRef<HTMLDivElement, PostPosterProps>(
   ({ match, cafeSettings }, ref) => {
     const homeTeam = TEAMS[match.homeTeam];
     const dayName = getTurkishDayName(match.date);
     const bgUrl = cafeSettings.customBackground || cafeSettings.selectedBackground || '/stadium_bg.png';
     const leagueTitle = getLeagueHeaderTitle(match.league);
+    const awayLogo = resolveAwayLogo(match);
+
+    const [imgFailed, setImgFailed] = useState(false);
+
+    useEffect(() => {
+      setImgFailed(false);
+    }, [match.id, match.awayTeamLogo]);
 
     let cafeHeader = cafeSettings.cafeName ? cafeSettings.cafeName.toUpperCase() : "AT KAFASI CAFE";
     if (!cafeHeader.endsWith("'DE") && !cafeHeader.endsWith("DE") && !cafeHeader.endsWith("'DA") && !cafeHeader.endsWith("DA")) {
@@ -173,8 +190,8 @@ const PostPoster = forwardRef<HTMLDivElement, PostPosterProps>(
             {/* Home Team */}
             <div
               style={{
-                width: 480,
-                height: 480,
+                width: 320,
+                height: 320,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -190,7 +207,6 @@ const PostPoster = forwardRef<HTMLDivElement, PostPosterProps>(
                   maxWidth: '100%',
                   maxHeight: '100%',
                   objectFit: 'contain',
-                  transform: 'scale(1.45)',
                 }}
               />
             </div>
@@ -198,14 +214,14 @@ const PostPoster = forwardRef<HTMLDivElement, PostPosterProps>(
             {/* Cafe Logo */}
             <div
               style={{
-                width: 170,
-                height: 170,
+                width: 160,
+                height: 160,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.9))',
-                zIndex: 1,
-                margin: '0 -60px',
+                zIndex: 3,
+                margin: '0 -35px',
                 flexShrink: 0,
               }}
             >
@@ -223,8 +239,8 @@ const PostPoster = forwardRef<HTMLDivElement, PostPosterProps>(
             {/* Away Team */}
             <div
               style={{
-                width: 480,
-                height: 480,
+                width: 320,
+                height: 320,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -233,29 +249,29 @@ const PostPoster = forwardRef<HTMLDivElement, PostPosterProps>(
                 flexShrink: 0,
               }}
             >
-              {match.awayTeamLogo ? (
+              {awayLogo && !imgFailed ? (
                 <img
-                  src={match.awayTeamLogo}
+                  src={awayLogo}
                   alt={match.awayTeam}
+                  onError={() => setImgFailed(true)}
                   style={{
                     maxWidth: '100%',
                     maxHeight: '100%',
                     objectFit: 'contain',
-                    transform: 'scale(1.45)',
                   }}
                 />
               ) : (
                 <div
                   style={{
-                    width: 400,
-                    height: 400,
+                    width: 250,
+                    height: 250,
                     borderRadius: '50%',
-                    background: 'rgba(0,0,0,0.75)',
+                    background: 'rgba(0,0,0,0.85)',
                     border: '6px solid #FFE145',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 110,
+                    fontSize: 70,
                     fontWeight: 900,
                     color: '#FFE145',
                   }}

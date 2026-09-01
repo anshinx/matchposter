@@ -10,6 +10,7 @@ const TRACKED_TEAMS: { slug: TeamSlug; sofascoreId: number; name: string }[] = [
   { slug: 'galatasaray', sofascoreId: 3061, name: 'Galatasaray' },
   { slug: 'fenerbahce', sofascoreId: 3052, name: 'Fenerbahçe' },
   { slug: 'besiktas', sofascoreId: 3050, name: 'Beşiktaş' },
+  { slug: 'trabzonspor', sofascoreId: 3051, name: 'Trabzonspor' },
 ];
 
 // Sofascore "away team" ismini TeamSlug'a eşleştirmek için

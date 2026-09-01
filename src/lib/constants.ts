@@ -32,81 +32,23 @@ export const TEAMS: Record<TeamSlug, Team> = {
     gradient: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
     darkGradient: 'linear-gradient(135deg, #0a0a15 0%, #0b1020 100%)',
   },
+  trabzonspor: {
+    slug: 'trabzonspor',
+    name: 'Trabzonspor',
+    shortName: 'TS',
+    logo: '/teams/trabzonspor.png',
+    primaryColor: '#800020',
+    secondaryColor: '#56A5D8',
+    gradient: 'linear-gradient(135deg, #800020 0%, #56A5D8 100%)',
+    darkGradient: 'linear-gradient(135deg, #4a0013 0%, #1e4d6b 100%)',
+  },
 };
 
 export const TEAM_LIST: Team[] = Object.values(TEAMS);
 
 // ─── Varsayılan Örnek Maçlar (2026–2027 Sezonu) ───────────────────────
 export const DEFAULT_MATCHES: Match[] = [
-  {
-    id: 'match_default_1',
-    homeTeam: 'galatasaray',
-    awayTeam: 'Antalyaspor',
-    date: '2026-09-13',
-    time: '20:00',
-    venue: 'Rams Park',
-    league: 'Süper Lig',
-    week: 3,
-  },
-  {
-    id: 'match_default_2',
-    homeTeam: 'fenerbahce',
-    awayTeam: 'Beşiktaş',
-    date: '2026-09-20',
-    time: '19:00',
-    venue: 'Ülker Stadyumu',
-    league: 'Süper Lig',
-    week: 4,
-  },
-  {
-    id: 'match_default_3',
-    homeTeam: 'besiktas',
-    awayTeam: 'Trabzonspor',
-    date: '2026-09-27',
-    time: '21:00',
-    venue: 'Tüpraş Stadyumu',
-    league: 'Süper Lig',
-    week: 5,
-  },
-  {
-    id: 'match_default_4',
-    homeTeam: 'galatasaray',
-    awayTeam: 'Fenerbahçe',
-    date: '2026-10-25',
-    time: '19:00',
-    venue: 'Rams Park',
-    league: 'Süper Lig',
-    week: 9,
-  },
-  {
-    id: 'match_default_5',
-    homeTeam: 'besiktas',
-    awayTeam: 'Galatasaray',
-    date: '2026-11-29',
-    time: '20:00',
-    venue: 'Tüpraş Stadyumu',
-    league: 'Süper Lig',
-    week: 13,
-  },
-  {
-    id: 'match_default_6',
-    homeTeam: 'fenerbahce',
-    awayTeam: 'Kasımpaşa',
-    date: '2026-09-06',
-    time: '19:30',
-    venue: 'Ülker Stadyumu',
-    league: 'Süper Lig',
-    week: 2,
-  },
-  {
-    id: 'match_default_7',
-    homeTeam: 'galatasaray',
-    awayTeam: 'Bayern Münih',
-    date: '2026-10-20',
-    time: '21:00',
-    venue: 'Rams Park',
-    league: 'Şampiyonlar Ligi',
-  },
+
 ];
 
 // ─── Arka Plan Preset Seçenekleri ──────────────────────────────────────
